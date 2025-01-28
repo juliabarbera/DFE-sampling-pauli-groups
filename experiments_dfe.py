@@ -184,13 +184,18 @@ class DFE:
 
         for i, pauli in enumerate(pauli_list):
             added_to_any_group = False
-            for _, (group, group_2) in enumerate(zip(no_groups, x_ki_group)):
-                if self.commutes(group, pauli, condition):
-                    group.append(pauli)
-                    group_2.append(x_ki_list[i])
-                    added_to_any_group = True
-                    break
-            if not added_to_any_group:
+            if pauli != tuple('I' for _ in range(self.qubits)):
+                for _, (group, group_2) in enumerate(zip(no_groups, x_ki_group)):
+                    if tuple('I' for _ in range(self.qubits)) not in group:
+                        if self.commutes(group, pauli, condition):
+                            group.append(pauli)
+                            group_2.append(x_ki_list[i])
+                            added_to_any_group = True
+                            break
+                if not added_to_any_group:
+                    no_groups.append([pauli])
+                    x_ki_group.append([x_ki_list[i]])
+            else: 
                 no_groups.append([pauli])
                 x_ki_group.append([x_ki_list[i]])
         return no_groups, x_ki_group
@@ -509,11 +514,15 @@ class DFE:
                     Aij =  self.measure_pauli_string_exp(mi, li, list_x_ki_group[s], proj_probs[s])
                     x_ki_group = sum([x ** 2 for x in list_x_ki_group[s]])
                     Xi += 1/(mi * np.sqrt(self.d) * x_ki_group) * Aij
+                    if tuple('I' for _ in range(self.qubits)) not in groups[s]:
+                        m.append(mi * li)
+                        
                 else: 
                     mi = int(np.ceil((2/(self.d * x_ki ** 2 * self.l * self.eps ** 2)) * np.log(2/self.delta)))
                     Aij =  self.measure_pauli_string_exp(mi, li, [1], proj_probs[s])
                     Xi += 1/(mi * np.sqrt(self.d) * x_ki) * Aij
-                m.append(mi * li)
+                    if pauli_list[s] != [tuple('I' for _ in range(self.qubits))]:
+                        m.append(mi * li)
 
         Y = (1 / self.l) * Xi
         F = self.compute_true_fidelity(np.array(rho), sigma)
